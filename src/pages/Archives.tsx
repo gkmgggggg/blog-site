@@ -12,7 +12,8 @@ export default function Archives() {
   const [total, setTotal] = useState(0)
 
   useEffect(() => {
-    postsApi.archives()
+    postsApi
+      .archives()
       .then((data) => {
         setArchives(data)
         setTotal(data.reduce((sum, y) => sum + y.posts.length, 0))
@@ -52,8 +53,14 @@ export default function Archives() {
                     {post.category}
                   </span>
                   <div className="flex items-center gap-3 text-xs text-gray-400 shrink-0">
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{post.readingTime}m</span>
-                    <span className="flex items-center gap-1 hidden sm:flex"><Eye className="w-3 h-3" />{post.views}</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {post.readingTime}m
+                    </span>
+                    <span className="flex items-center gap-1 hidden sm:flex">
+                      <Eye className="w-3 h-3" />
+                      {post.views}
+                    </span>
                   </div>
                 </Link>
               ))}

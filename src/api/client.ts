@@ -22,7 +22,10 @@ function transformKeysToSnake(obj: unknown): unknown {
   if (Array.isArray(obj)) return obj.map(transformKeysToSnake)
   if (obj !== null && typeof obj === 'object') {
     return Object.fromEntries(
-      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [toSnake(k), transformKeysToSnake(v)])
+      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [
+        toSnake(k),
+        transformKeysToSnake(v),
+      ])
     )
   }
   return obj
@@ -42,11 +45,7 @@ function getToken(): string | null {
   return localStorage.getItem('access_token')
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-  skipAuth = false
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, skipAuth = false): Promise<T> {
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   }
@@ -74,11 +73,20 @@ async function request<T>(
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'POST', body: body ? JSON.stringify(transformKeysToSnake(body)) : undefined }),
+    request<T>(path, {
+      method: 'POST',
+      body: body ? JSON.stringify(transformKeysToSnake(body)) : undefined,
+    }),
   put: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'PUT', body: body ? JSON.stringify(transformKeysToSnake(body)) : undefined }),
+    request<T>(path, {
+      method: 'PUT',
+      body: body ? JSON.stringify(transformKeysToSnake(body)) : undefined,
+    }),
   patch: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'PATCH', body: body ? JSON.stringify(transformKeysToSnake(body)) : undefined }),
+    request<T>(path, {
+      method: 'PATCH',
+      body: body ? JSON.stringify(transformKeysToSnake(body)) : undefined,
+    }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   upload: <T>(path: string, formData: FormData) =>
     request<T>(path, { method: 'POST', body: formData }),

@@ -3,12 +3,14 @@ export function nanoid(): string {
 }
 
 export function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[\s\u4e00-\u9fa5]+/g, '-')
-    .replace(/[^\w-]/g, '')
-    .replace(/--+/g, '-')
-    .replace(/^-|-$/g, '') || `post-${Date.now()}`
+  return (
+    text
+      .toLowerCase()
+      .replace(/[\s\u4e00-\u9fa5]+/g, '-')
+      .replace(/[^\w-]/g, '')
+      .replace(/--+/g, '-')
+      .replace(/^-|-$/g, '') || `post-${Date.now()}`
+  )
 }
 
 export function formatDate(dateStr: string): string {

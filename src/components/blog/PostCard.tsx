@@ -10,7 +10,9 @@ interface Props {
 
 export default function PostCard({ post, featured = false }: Props) {
   return (
-    <article className={`group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 ${featured ? 'md:col-span-2' : ''}`}>
+    <article
+      className={`group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 ${featured ? 'md:col-span-2' : ''}`}
+    >
       {post.coverImage && (
         <Link to={`/post/${post.slug}`} className="block overflow-hidden">
           <img
@@ -27,7 +29,10 @@ export default function PostCard({ post, featured = false }: Props) {
             {post.category}
           </span>
           {post.tags.slice(0, 2).map((tag) => (
-            <span key={tag} className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span
+              key={tag}
+              className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full flex items-center gap-1"
+            >
               <Tag className="w-2.5 h-2.5" />
               {tag}
             </span>
@@ -36,15 +41,15 @@ export default function PostCard({ post, featured = false }: Props) {
 
         {/* Title */}
         <Link to={`/post/${post.slug}`}>
-          <h2 className={`font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-2 ${featured ? 'text-2xl' : 'text-lg'}`}>
+          <h2
+            className={`font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-2 ${featured ? 'text-2xl' : 'text-lg'}`}
+          >
             {post.title}
           </h2>
         </Link>
 
         {/* Excerpt */}
-        <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-4">
-          {post.excerpt}
-        </p>
+        <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-4">{post.excerpt}</p>
 
         {/* Meta */}
         <div className="flex items-center justify-between text-xs text-gray-400">

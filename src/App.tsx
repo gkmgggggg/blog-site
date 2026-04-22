@@ -17,7 +17,14 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'post/:slug', element: <PostDetail /> },
-      { path: 'dashboard', element: <RequireAuth><Dashboard /></RequireAuth> },
+      {
+        path: 'dashboard',
+        element: (
+          <RequireAuth>
+            <Dashboard />
+          </RequireAuth>
+        ),
+      },
       { path: 'archives', element: <Archives /> },
       { path: 'about', element: <About /> },
       { path: 'login', element: <Login /> },
@@ -26,7 +33,11 @@ const router = createBrowserRouter([
   },
   {
     path: '/editor/:id',
-    element: <RequireAuth><Editor /></RequireAuth>,
+    element: (
+      <RequireAuth>
+        <Editor />
+      </RequireAuth>
+    ),
   },
 ])
 

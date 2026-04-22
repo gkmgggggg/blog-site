@@ -5,9 +5,22 @@ import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
 import {
-  Bold, Italic, Strikethrough, Code, Heading1, Heading2, Heading3,
-  List, ListOrdered, Quote, Minus, Undo, Redo, Link as LinkIcon,
-  Image as ImageIcon, Code2,
+  Bold,
+  Italic,
+  Strikethrough,
+  Code,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Quote,
+  Minus,
+  Undo,
+  Redo,
+  Link as LinkIcon,
+  Image as ImageIcon,
+  Code2,
 } from 'lucide-react'
 
 interface Props {
@@ -36,9 +49,7 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       className={`p-1.5 rounded transition-colors ${
-        active
-          ? 'bg-blue-100 text-blue-700'
-          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+        active ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
       } disabled:opacity-30 disabled:cursor-not-allowed`}
     >
       {children}
@@ -85,46 +96,93 @@ export default function RichEditor({ content, onChange, placeholder = '开始写
     <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-0.5 px-3 py-2 border-b border-gray-200 bg-gray-50">
-        <ToolbarButton title="加粗" onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')}>
+        <ToolbarButton
+          title="加粗"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          active={editor.isActive('bold')}
+        >
           <Bold className="w-4 h-4" />
         </ToolbarButton>
-        <ToolbarButton title="斜体" onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')}>
+        <ToolbarButton
+          title="斜体"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          active={editor.isActive('italic')}
+        >
           <Italic className="w-4 h-4" />
         </ToolbarButton>
-        <ToolbarButton title="删除线" onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')}>
+        <ToolbarButton
+          title="删除线"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          active={editor.isActive('strike')}
+        >
           <Strikethrough className="w-4 h-4" />
         </ToolbarButton>
-        <ToolbarButton title="行内代码" onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive('code')}>
+        <ToolbarButton
+          title="行内代码"
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          active={editor.isActive('code')}
+        >
           <Code className="w-4 h-4" />
         </ToolbarButton>
 
         <Divider />
 
-        <ToolbarButton title="标题 1" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })}>
+        <ToolbarButton
+          title="标题 1"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          active={editor.isActive('heading', { level: 1 })}
+        >
           <Heading1 className="w-4 h-4" />
         </ToolbarButton>
-        <ToolbarButton title="标题 2" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })}>
+        <ToolbarButton
+          title="标题 2"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          active={editor.isActive('heading', { level: 2 })}
+        >
           <Heading2 className="w-4 h-4" />
         </ToolbarButton>
-        <ToolbarButton title="标题 3" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })}>
+        <ToolbarButton
+          title="标题 3"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          active={editor.isActive('heading', { level: 3 })}
+        >
           <Heading3 className="w-4 h-4" />
         </ToolbarButton>
 
         <Divider />
 
-        <ToolbarButton title="无序列表" onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')}>
+        <ToolbarButton
+          title="无序列表"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          active={editor.isActive('bulletList')}
+        >
           <List className="w-4 h-4" />
         </ToolbarButton>
-        <ToolbarButton title="有序列表" onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')}>
+        <ToolbarButton
+          title="有序列表"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          active={editor.isActive('orderedList')}
+        >
           <ListOrdered className="w-4 h-4" />
         </ToolbarButton>
-        <ToolbarButton title="引用块" onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')}>
+        <ToolbarButton
+          title="引用块"
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          active={editor.isActive('blockquote')}
+        >
           <Quote className="w-4 h-4" />
         </ToolbarButton>
-        <ToolbarButton title="代码块" onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive('codeBlock')}>
+        <ToolbarButton
+          title="代码块"
+          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          active={editor.isActive('codeBlock')}
+        >
           <Code2 className="w-4 h-4" />
         </ToolbarButton>
-        <ToolbarButton title="分割线" onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+        <ToolbarButton
+          title="分割线"
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+        >
           <Minus className="w-4 h-4" />
         </ToolbarButton>
 
@@ -139,10 +197,18 @@ export default function RichEditor({ content, onChange, placeholder = '开始写
 
         <Divider />
 
-        <ToolbarButton title="撤销" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
+        <ToolbarButton
+          title="撤销"
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+        >
           <Undo className="w-4 h-4" />
         </ToolbarButton>
-        <ToolbarButton title="重做" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}>
+        <ToolbarButton
+          title="重做"
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+        >
           <Redo className="w-4 h-4" />
         </ToolbarButton>
 

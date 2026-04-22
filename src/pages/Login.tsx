@@ -18,7 +18,10 @@ export default function Login() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!password.trim()) { setError('请输入密码'); return }
+    if (!password.trim()) {
+      setError('请输入密码')
+      return
+    }
     setLoading(true)
     setError('')
     try {

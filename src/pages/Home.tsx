@@ -8,10 +8,18 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams()
   const {
-    posts, loading, error,
-    searchQuery, selectedTag, selectedCategory, tags,
-    setSearchQuery, setSelectedTag, setSelectedCategory,
-    fetchPosts, fetchTags,
+    posts,
+    loading,
+    error,
+    searchQuery,
+    selectedTag,
+    selectedCategory,
+    tags,
+    setSearchQuery,
+    setSelectedTag,
+    setSelectedCategory,
+    fetchPosts,
+    fetchTags,
   } = useBlogStore()
 
   // 仅在 mount 时将 URL 参数同步到 store（避免与 fetch effect 级联）
@@ -82,8 +90,12 @@ export default function Home() {
                   {selectedCategory}
                 </span>
               )}
-              <button onClick={clearFilters} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors">
-                <X className="w-3.5 h-3.5" />清除筛选
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                清除筛选
               </button>
               <span className="text-sm text-gray-400 ml-auto">共 {posts.length} 篇</span>
             </div>
@@ -95,7 +107,14 @@ export default function Home() {
             <div className="text-center py-20">
               <p className="text-red-500 mb-3">{error}</p>
               <button
-                onClick={() => fetchPosts({ status: 'published', search: searchQuery || undefined, tag: selectedTag || undefined, category: selectedCategory || undefined })}
+                onClick={() =>
+                  fetchPosts({
+                    status: 'published',
+                    search: searchQuery || undefined,
+                    tag: selectedTag || undefined,
+                    category: selectedCategory || undefined,
+                  })
+                }
                 className="text-blue-600 hover:underline text-sm"
               >
                 重试
@@ -105,7 +124,14 @@ export default function Home() {
             <div className="text-center py-20 text-gray-400">
               <Search className="w-12 h-12 mx-auto mb-4 opacity-30" />
               <p className="text-lg">未找到相关文章</p>
-              {hasFilters && <button onClick={clearFilters} className="mt-3 text-blue-600 hover:underline text-sm">清除筛选</button>}
+              {hasFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="mt-3 text-blue-600 hover:underline text-sm"
+                >
+                  清除筛选
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -168,7 +194,10 @@ export default function Home() {
           <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl p-5 text-white">
             <h3 className="font-bold text-lg mb-2">开始写作</h3>
             <p className="text-blue-100 text-sm mb-4">记录你的技术心得，与社区分享知识。</p>
-            <Link to="/editor/new" className="block text-center bg-white text-blue-600 font-semibold text-sm py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors">
+            <Link
+              to="/editor/new"
+              className="block text-center bg-white text-blue-600 font-semibold text-sm py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors"
+            >
               写新文章
             </Link>
           </div>

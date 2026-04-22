@@ -41,7 +41,8 @@ export default function Editor() {
   useEffect(() => {
     if (isNew || !id) return
     setLoadingPost(true)
-    postsApi.getById(id)
+    postsApi
+      .getById(id)
       .then((post) => {
         setForm({
           title: post.title,
@@ -70,8 +71,14 @@ export default function Editor() {
   }
 
   async function save(status: Post['status']) {
-    if (!form.title.trim()) { setSaveError('请填写文章标题'); return }
-    if (!isLoggedIn) { navigate('/login', { state: { from: location.pathname } }); return }
+    if (!form.title.trim()) {
+      setSaveError('请填写文章标题')
+      return
+    }
+    if (!isLoggedIn) {
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
 
     setSaving(true)
     setSaveError('')
@@ -109,7 +116,10 @@ export default function Editor() {
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 min-w-0">
@@ -122,8 +132,16 @@ export default function Editor() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs text-gray-400 hidden sm:block">{wordCount} 字</span>
-            {saved && <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">已保存</span>}
-            {saveError && <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full max-w-32 truncate">{saveError}</span>}
+            {saved && (
+              <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                已保存
+              </span>
+            )}
+            {saveError && (
+              <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full max-w-32 truncate">
+                {saveError}
+              </span>
+            )}
 
             <button
               onClick={() => form.slug && navigate(`/post/${form.slug || slugify(form.title)}`)}
@@ -169,7 +187,11 @@ export default function Editor() {
                 className="w-full text-sm text-gray-700 placeholder-gray-400 border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
-            <RichEditor content={form.content} onChange={(html) => setField('content', html)} placeholder="开始写你的文章..." />
+            <RichEditor
+              content={form.content}
+              onChange={(html) => setField('content', html)}
+              placeholder="开始写你的文章..."
+            />
           </div>
 
           <aside className="w-full lg:w-72 shrink-0 space-y-4">
@@ -178,10 +200,14 @@ export default function Editor() {
               <h3 className="text-sm font-semibold text-gray-900 mb-3">发布状态</h3>
               <div className="flex gap-2">
                 {(['draft', 'published'] as const).map((s) => (
-                  <button key={s} onClick={() => setField('status', s)}
+                  <button
+                    key={s}
+                    onClick={() => setField('status', s)}
                     className={`flex-1 py-2 text-sm rounded-lg border transition-colors ${
                       form.status === s
-                        ? s === 'published' ? 'bg-blue-600 text-white border-blue-600' : 'bg-orange-50 text-orange-600 border-orange-300'
+                        ? s === 'published'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-orange-50 text-orange-600 border-orange-300'
                         : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
@@ -196,8 +222,15 @@ export default function Editor() {
               <h3 className="text-sm font-semibold text-gray-900 mb-3">封面图片</h3>
               {form.coverImage && (
                 <div className="relative mb-3">
-                  <img src={form.coverImage} alt="封面" className="w-full h-32 object-cover rounded-lg" />
-                  <button onClick={() => setField('coverImage', '')} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 hover:bg-black/70">
+                  <img
+                    src={form.coverImage}
+                    alt="封面"
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                  <button
+                    onClick={() => setField('coverImage', '')}
+                    className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 hover:bg-black/70"
+                  >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -213,10 +246,16 @@ export default function Editor() {
             {/* Category */}
             <div className="bg-white rounded-xl p-4 border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">分类</h3>
-              <select value={form.category} onChange={(e) => setField('category', e.target.value)}
+              <select
+                value={form.category}
+                onChange={(e) => setField('category', e.target.value)}
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -225,9 +264,20 @@ export default function Editor() {
               <h3 className="text-sm font-semibold text-gray-900 mb-3">标签</h3>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {form.tags.map((tag) => (
-                  <span key={tag} className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+                  <span
+                    key={tag}
+                    className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full"
+                  >
                     {tag}
-                    <button onClick={() => setField('tags', form.tags.filter((t) => t !== tag))} className="hover:text-red-500">
+                    <button
+                      onClick={() =>
+                        setField(
+                          'tags',
+                          form.tags.filter((t) => t !== tag)
+                        )
+                      }
+                      className="hover:text-red-500"
+                    >
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -237,11 +287,19 @@ export default function Editor() {
                 <input
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addTag()
+                    }
+                  }}
                   placeholder="添加标签..."
                   className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <button onClick={addTag} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <button
+                  onClick={addTag}
+                  className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
                   <Plus className="w-4 h-4" />
                 </button>
               </div>

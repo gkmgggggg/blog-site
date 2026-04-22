@@ -20,7 +20,11 @@ export const useAuthStore = create<AuthStore>()(
       login: async (email, password) => {
         const tokens = await authApi.login(email, password)
         localStorage.setItem('access_token', tokens.accessToken)
-        set({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, isLoggedIn: true })
+        set({
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          isLoggedIn: true,
+        })
       },
 
       logout: async () => {
@@ -30,7 +34,14 @@ export const useAuthStore = create<AuthStore>()(
         set({ accessToken: null, refreshToken: null, isLoggedIn: false })
       },
     }),
-    { name: 'auth-store', partialize: (s) => ({ accessToken: s.accessToken, refreshToken: s.refreshToken, isLoggedIn: s.isLoggedIn }) }
+    {
+      name: 'auth-store',
+      partialize: (s) => ({
+        accessToken: s.accessToken,
+        refreshToken: s.refreshToken,
+        isLoggedIn: s.isLoggedIn,
+      }),
+    }
   )
 )
 
