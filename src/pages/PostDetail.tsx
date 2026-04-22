@@ -9,27 +9,26 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 export default function PostDetail() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
-  const [post, setPost] = useState<Post | null>(null)
-  const [related, setRelated] = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [data, setData] = useState<{ post: Post | null; related: Post[]; error: string; loadedSlug: string | null }>({
+    post: null, related: [], error: '', loadedSlug: null,
+  })
+
+  const loading = data.loadedSlug !== slug
+  const { post, related, error } = data
 
   useEffect(() => {
     if (!slug) return
-    setLoading(true)
     postsApi.getBySlug(slug)
       .then(async (p) => {
-        setPost(p)
-        setLoading(false)
-        // 增加阅读数（fire-and-forget）
-        postsApi.incrementViews(p.id).catch(() => {})
-        // 获取相关文章
+        let relatedPosts: Post[] = []
         if (p.tags.length > 0) {
           const { posts } = await postsApi.list({ status: 'published', tag: p.tags[0], pageSize: 4 })
-          setRelated(posts.filter((r) => r.id !== p.id).slice(0, 3))
+          relatedPosts = posts.filter((r) => r.id !== p.id).slice(0, 3)
         }
+        postsApi.incrementViews(p.id).catch(() => {})
+        setData({ post: p, related: relatedPosts, error: '', loadedSlug: slug })
       })
-      .catch((e) => { setError(e.message); setLoading(false) })
+      .catch((e) => setData({ post: null, related: [], error: e.message, loadedSlug: slug }))
   }, [slug])
 
   if (loading) return <LoadingSpinner text="加载文章中..." />
