@@ -1,132 +1,125 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import type { Post, PostFormData } from '@/types'
-import { initialPosts, defaultAuthor } from '@/data/mockData'
-import { nanoid } from '@/utils'
+import type { Post } from '@/types'
+import { postsApi } from '@/api/posts'
+import type { PostsQuery, StatsResponse } from '@/api/posts'
 
 interface BlogStore {
+  // 文章数据
   posts: Post[]
+  totalPosts: number
+  loading: boolean
+  error: string | null
+
+  // 筛选状态（本地）
   searchQuery: string
   selectedTag: string
   selectedCategory: string
+
+  // 标签
+  tags: { tag: string; count: number }[]
+
+  // 统计
+  stats: StatsResponse | null
+
+  // 筛选 actions
   setSearchQuery: (q: string) => void
   setSelectedTag: (tag: string) => void
   setSelectedCategory: (cat: string) => void
-  getPost: (slug: string) => Post | undefined
-  createPost: (data: PostFormData) => Post
-  updatePost: (id: string, data: Partial<PostFormData>) => void
-  deletePost: (id: string) => void
-  publishPost: (id: string) => void
-  unpublishPost: (id: string) => void
-  incrementViews: (id: string) => void
-  getAllTags: () => string[]
-  getFilteredPosts: (status?: 'published' | 'draft') => Post[]
+
+  // 数据获取
+  fetchPosts: (query?: PostsQuery) => Promise<void>
+  fetchAllPosts: () => Promise<void>
+  fetchTags: () => Promise<void>
+  fetchStats: () => Promise<void>
+
+  // CRUD
+  createPost: (data: Partial<Post>) => Promise<Post>
+  updatePost: (id: string, data: Partial<Post>) => Promise<Post>
+  deletePost: (id: string) => Promise<void>
+  publishPost: (id: string) => Promise<void>
+  unpublishPost: (id: string) => Promise<void>
+  incrementViews: (id: string) => Promise<void>
 }
 
-function calcReadingTime(content: string): number {
-  const text = content.replace(/<[^>]+>/g, '')
-  const words = text.length
-  return Math.max(1, Math.ceil(words / 300))
-}
+export const useBlogStore = create<BlogStore>()((set) => ({
+  posts: [],
+  totalPosts: 0,
+  loading: false,
+  error: null,
+  searchQuery: '',
+  selectedTag: '',
+  selectedCategory: '',
+  tags: [],
+  stats: null,
 
-export const useBlogStore = create<BlogStore>()(
-  persist(
-    (set, get) => ({
-      posts: initialPosts,
-      searchQuery: '',
-      selectedTag: '',
-      selectedCategory: '',
+  setSearchQuery: (q) => set({ searchQuery: q }),
+  setSelectedTag: (tag) => set({ selectedTag: tag }),
+  setSelectedCategory: (cat) => set({ selectedCategory: cat }),
 
-      setSearchQuery: (q) => set({ searchQuery: q }),
-      setSelectedTag: (tag) => set({ selectedTag: tag }),
-      setSelectedCategory: (cat) => set({ selectedCategory: cat }),
+  fetchPosts: async (query = {}) => {
+    set({ loading: true, error: null })
+    try {
+      const { posts, meta } = await postsApi.list(query)
+      set({ posts, totalPosts: meta.total, loading: false })
+    } catch (e) {
+      set({ error: (e as Error).message, loading: false })
+    }
+  },
 
-      getPost: (slug) => get().posts.find((p) => p.slug === slug),
+  fetchAllPosts: async () => {
+    set({ loading: true, error: null })
+    try {
+      const { posts, meta } = await postsApi.list({ pageSize: 100 })
+      set({ posts, totalPosts: meta.total, loading: false })
+    } catch (e) {
+      set({ error: (e as Error).message, loading: false })
+    }
+  },
 
-      createPost: (data) => {
-        const now = new Date().toISOString()
-        const post: Post = {
-          ...data,
-          id: nanoid(),
-          author: defaultAuthor,
-          createdAt: now,
-          updatedAt: now,
-          publishedAt: data.status === 'published' ? now : undefined,
-          readingTime: calcReadingTime(data.content),
-          views: 0,
-        }
-        set((s) => ({ posts: [post, ...s.posts] }))
-        return post
-      },
+  fetchTags: async () => {
+    try {
+      const tags = await postsApi.tags()
+      set({ tags })
+    } catch {}
+  },
 
-      updatePost: (id, data) => {
-        set((s) => ({
-          posts: s.posts.map((p) => {
-            if (p.id !== id) return p
-            const now = new Date().toISOString()
-            return {
-              ...p,
-              ...data,
-              updatedAt: now,
-              publishedAt:
-                data.status === 'published' && p.status !== 'published'
-                  ? now
-                  : p.publishedAt,
-              readingTime: data.content ? calcReadingTime(data.content) : p.readingTime,
-            }
-          }),
-        }))
-      },
+  fetchStats: async () => {
+    try {
+      const stats = await postsApi.stats()
+      set({ stats })
+    } catch {}
+  },
 
-      deletePost: (id) => set((s) => ({ posts: s.posts.filter((p) => p.id !== id) })),
+  createPost: async (data) => {
+    const post = await postsApi.create(data)
+    set((s) => ({ posts: [post, ...s.posts] }))
+    return post
+  },
 
-      publishPost: (id) => {
-        const now = new Date().toISOString()
-        set((s) => ({
-          posts: s.posts.map((p) =>
-            p.id === id ? { ...p, status: 'published', publishedAt: now, updatedAt: now } : p
-          ),
-        }))
-      },
+  updatePost: async (id, data) => {
+    const post = await postsApi.update(id, data)
+    set((s) => ({ posts: s.posts.map((p) => (p.id === id ? post : p)) }))
+    return post
+  },
 
-      unpublishPost: (id) => {
-        set((s) => ({
-          posts: s.posts.map((p) =>
-            p.id === id
-              ? { ...p, status: 'draft', publishedAt: undefined, updatedAt: new Date().toISOString() }
-              : p
-          ),
-        }))
-      },
+  deletePost: async (id) => {
+    await postsApi.delete(id)
+    set((s) => ({ posts: s.posts.filter((p) => p.id !== id) }))
+  },
 
-      incrementViews: (id) => {
-        set((s) => ({
-          posts: s.posts.map((p) => (p.id === id ? { ...p, views: p.views + 1 } : p)),
-        }))
-      },
+  publishPost: async (id) => {
+    const post = await postsApi.publish(id)
+    set((s) => ({ posts: s.posts.map((p) => (p.id === id ? post : p)) }))
+  },
 
-      getAllTags: () => {
-        const tags = new Set<string>()
-        get().posts.forEach((p) => p.tags.forEach((t) => tags.add(t)))
-        return Array.from(tags)
-      },
+  unpublishPost: async (id) => {
+    const post = await postsApi.unpublish(id)
+    set((s) => ({ posts: s.posts.map((p) => (p.id === id ? post : p)) }))
+  },
 
-      getFilteredPosts: (status) => {
-        const { posts, searchQuery, selectedTag, selectedCategory } = get()
-        return posts.filter((p) => {
-          if (status && p.status !== status) return false
-          if (
-            searchQuery &&
-            !p.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-            !p.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-            return false
-          if (selectedTag && !p.tags.includes(selectedTag)) return false
-          if (selectedCategory && p.category !== selectedCategory) return false
-          return true
-        })
-      },
-    }),
-    { name: 'blog-store' }
-  )
-)
+  incrementViews: async (id) => {
+    try {
+      await postsApi.incrementViews(id)
+    } catch {}
+  },
+}))

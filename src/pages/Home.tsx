@@ -1,22 +1,41 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { Search, X, TrendingUp } from 'lucide-react'
 import { useBlogStore } from '@/store/blogStore'
 import PostCard from '@/components/blog/PostCard'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { setSearchQuery, setSelectedTag, setSelectedCategory, searchQuery, selectedTag, selectedCategory, getAllTags, getFilteredPosts } = useBlogStore()
+  const {
+    posts, loading, error,
+    searchQuery, selectedTag, selectedCategory, tags,
+    setSearchQuery, setSelectedTag, setSelectedCategory,
+    fetchPosts, fetchTags,
+  } = useBlogStore()
 
+  // 从 URL 同步初始搜索词
   useEffect(() => {
     const q = searchParams.get('search') || ''
-    setSearchQuery(q)
-  }, [searchParams, setSearchQuery])
+    if (q !== searchQuery) setSearchQuery(q)
+  }, [searchParams, searchQuery, setSearchQuery])
 
-  const publishedPosts = getFilteredPosts('published')
-  const allTags = getAllTags()
-  const featured = publishedPosts[0]
-  const restPosts = publishedPosts.slice(1)
+  // 当筛选条件变化时重新拉取
+  const load = useCallback(() => {
+    fetchPosts({
+      status: 'published',
+      search: searchQuery || undefined,
+      tag: selectedTag || undefined,
+      category: selectedCategory || undefined,
+    })
+  }, [searchQuery, selectedTag, selectedCategory, fetchPosts])
+
+  useEffect(() => { load() }, [load])
+  useEffect(() => { fetchTags() }, [fetchTags])
+
+  const featured = posts[0]
+  const restPosts = posts.slice(1)
+  const hasFilters = searchQuery || selectedTag || selectedCategory
 
   function clearFilters() {
     setSearchQuery('')
@@ -25,11 +44,8 @@ export default function Home() {
     setSearchParams({})
   }
 
-  const hasFilters = searchQuery || selectedTag || selectedCategory
-
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
-      {/* Hero */}
       {!hasFilters && (
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-gray-900 mb-4 leading-tight">
@@ -44,13 +60,11 @@ export default function Home() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Main Content */}
         <div className="flex-1 min-w-0">
-          {/* Filter Bar */}
           {hasFilters && (
             <div className="flex items-center gap-2 mb-6 flex-wrap">
               {searchQuery && (
                 <span className="flex items-center gap-1.5 bg-blue-50 text-blue-700 text-sm px-3 py-1.5 rounded-full">
-                  <Search className="w-3.5 h-3.5" />
-                  "{searchQuery}"
+                  <Search className="w-3.5 h-3.5" />"{searchQuery}"
                 </span>
               )}
               {selectedTag && (
@@ -64,22 +78,27 @@ export default function Home() {
                 </span>
               )}
               <button onClick={clearFilters} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors">
-                <X className="w-3.5 h-3.5" />
-                清除筛选
+                <X className="w-3.5 h-3.5" />清除筛选
               </button>
-              <span className="text-sm text-gray-400 ml-auto">共 {publishedPosts.length} 篇</span>
+              <span className="text-sm text-gray-400 ml-auto">共 {posts.length} 篇</span>
             </div>
           )}
 
-          {publishedPosts.length === 0 ? (
+          {loading ? (
+            <LoadingSpinner />
+          ) : error ? (
+            <div className="text-center py-20">
+              <p className="text-red-500 mb-3">{error}</p>
+              <button onClick={load} className="text-blue-600 hover:underline text-sm">重试</button>
+            </div>
+          ) : posts.length === 0 ? (
             <div className="text-center py-20 text-gray-400">
               <Search className="w-12 h-12 mx-auto mb-4 opacity-30" />
               <p className="text-lg">未找到相关文章</p>
-              <button onClick={clearFilters} className="mt-3 text-blue-600 hover:underline text-sm">清除筛选</button>
+              {hasFilters && <button onClick={clearFilters} className="mt-3 text-blue-600 hover:underline text-sm">清除筛选</button>}
             </div>
           ) : (
             <>
-              {/* Featured Post */}
               {!hasFilters && featured && (
                 <div className="mb-8">
                   <div className="flex items-center gap-2 mb-4">
@@ -89,10 +108,8 @@ export default function Home() {
                   <PostCard post={featured} featured />
                 </div>
               )}
-
-              {/* Post Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {(hasFilters ? publishedPosts : restPosts).map((post) => (
+                {(hasFilters ? posts : restPosts).map((post) => (
                   <PostCard key={post.id} post={post} />
                 ))}
               </div>
@@ -102,7 +119,6 @@ export default function Home() {
 
         {/* Sidebar */}
         <aside className="w-full lg:w-72 shrink-0 space-y-6">
-          {/* Search */}
           <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
             <h3 className="font-semibold text-gray-900 mb-3">搜索文章</h3>
             <div className="relative">
@@ -119,34 +135,31 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Tags */}
-          <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-            <h3 className="font-semibold text-gray-900 mb-3">标签云</h3>
-            <div className="flex flex-wrap gap-2">
-              {allTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                    selectedTag === tag
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600'
-                  }`}
-                >
-                  #{tag}
-                </button>
-              ))}
+          {tags.length > 0 && (
+            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+              <h3 className="font-semibold text-gray-900 mb-3">标签云</h3>
+              <div className="flex flex-wrap gap-2">
+                {tags.map(({ tag }) => (
+                  <button
+                    key={tag}
+                    onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      selectedTag === tag
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+                    }`}
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Write CTA */}
           <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl p-5 text-white">
             <h3 className="font-bold text-lg mb-2">开始写作</h3>
             <p className="text-blue-100 text-sm mb-4">记录你的技术心得，与社区分享知识。</p>
-            <Link
-              to="/editor/new"
-              className="block text-center bg-white text-blue-600 font-semibold text-sm py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors"
-            >
+            <Link to="/editor/new" className="block text-center bg-white text-blue-600 font-semibold text-sm py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors">
               写新文章
             </Link>
           </div>

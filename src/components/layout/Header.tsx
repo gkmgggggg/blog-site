@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { PenSquare, Search, Menu, X, BookOpen } from 'lucide-react'
+import { PenSquare, Search, Menu, X, BookOpen, LogIn, LogOut } from 'lucide-react'
 import { useBlogStore } from '@/store/blogStore'
+import { useAuthStore } from '@/store/authStore'
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchVal, setSearchVal] = useState('')
   const setSearchQuery = useBlogStore((s) => s.setSearchQuery)
+  const { isLoggedIn, logout } = useAuthStore()
   const navigate = useNavigate()
 
   function handleSearch(e: React.FormEvent) {
@@ -20,20 +22,17 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-gray-100 shadow-sm">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-2 font-bold text-xl text-gray-900 hover:text-blue-600 transition-colors">
           <BookOpen className="w-6 h-6 text-blue-600" />
           <span>DevBlog</span>
         </Link>
 
-        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
           <Link to="/" className="hover:text-blue-600 transition-colors">首页</Link>
           <Link to="/archives" className="hover:text-blue-600 transition-colors">归档</Link>
           <Link to="/about" className="hover:text-blue-600 transition-colors">关于</Link>
         </nav>
 
-        {/* Actions */}
         <div className="flex items-center gap-2">
           {searchOpen ? (
             <form onSubmit={handleSearch} className="flex items-center gap-2">
@@ -54,13 +53,24 @@ export default function Header() {
             </button>
           )}
 
-          <Link
-            to="/dashboard"
-            className="hidden md:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            <PenSquare className="w-4 h-4" />
-            写文章
-          </Link>
+          {isLoggedIn ? (
+            <>
+              <Link to="/dashboard" className="hidden md:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                <PenSquare className="w-4 h-4" />写文章
+              </Link>
+              <button
+                onClick={() => logout()}
+                className="hidden md:flex items-center gap-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 text-sm px-3 py-2 rounded-lg transition-colors"
+                title="退出登录"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <Link to="/login" className="hidden md:flex items-center gap-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors border border-gray-200">
+              <LogIn className="w-4 h-4" />登录
+            </Link>
+          )}
 
           <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 text-gray-500 hover:text-gray-700">
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -74,7 +84,14 @@ export default function Header() {
           <Link to="/" onClick={() => setMenuOpen(false)} className="block py-2 text-gray-700 hover:text-blue-600">首页</Link>
           <Link to="/archives" onClick={() => setMenuOpen(false)} className="block py-2 text-gray-700 hover:text-blue-600">归档</Link>
           <Link to="/about" onClick={() => setMenuOpen(false)} className="block py-2 text-gray-700 hover:text-blue-600">关于</Link>
-          <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block py-2 text-blue-600 font-medium">写文章</Link>
+          {isLoggedIn ? (
+            <>
+              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block py-2 text-blue-600 font-medium">写文章</Link>
+              <button onClick={() => { logout(); setMenuOpen(false) }} className="block py-2 text-red-500 text-sm">退出登录</button>
+            </>
+          ) : (
+            <Link to="/login" onClick={() => setMenuOpen(false)} className="block py-2 text-gray-700 hover:text-blue-600">登录</Link>
+          )}
         </div>
       )}
     </header>

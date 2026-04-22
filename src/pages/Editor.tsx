@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Save, Send, ArrowLeft, Eye, Loader2, X, Plus } from 'lucide-react'
 import { useBlogStore } from '@/store/blogStore'
+import { postsApi } from '@/api/posts'
+import { ApiError } from '@/api/client'
+import { useAuthStore } from '@/store/authStore'
 import RichEditor from '@/components/editor/RichEditor'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { slugify } from '@/utils'
 import { categories } from '@/data/mockData'
 import type { Post } from '@/types'
@@ -10,13 +14,17 @@ import type { Post } from '@/types'
 export default function Editor() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { posts, createPost, updatePost } = useBlogStore()
   const isNew = id === 'new'
-  const existing = isNew ? null : posts.find((p) => p.id === id)
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
 
+  const { createPost, updatePost } = useBlogStore()
+
+  const [loadingPost, setLoadingPost] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [tagInput, setTagInput] = useState('')
+  const [currentId, setCurrentId] = useState<string | null>(isNew ? null : id!)
 
   const [form, setForm] = useState({
     title: '',
@@ -27,69 +35,78 @@ export default function Editor() {
     tags: [] as string[],
     status: 'draft' as Post['status'],
     slug: '',
-    author: { id: '1', name: '张明', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=blog-author', bio: '全栈开发工程师' },
   })
 
+  // 编辑模式：从 API 加载文章
   useEffect(() => {
-    if (existing) {
-      setForm({
-        title: existing.title,
-        excerpt: existing.excerpt,
-        content: existing.content,
-        coverImage: existing.coverImage || '',
-        category: existing.category,
-        tags: existing.tags,
-        status: existing.status,
-        slug: existing.slug,
-        author: existing.author,
+    if (isNew || !id) return
+    setLoadingPost(true)
+    postsApi.getById(id)
+      .then((post) => {
+        setForm({
+          title: post.title,
+          excerpt: post.excerpt,
+          content: post.content,
+          coverImage: post.coverImage || '',
+          category: post.category,
+          tags: post.tags,
+          status: post.status,
+          slug: post.slug,
+        })
+        setCurrentId(post.id)
+        setLoadingPost(false)
       })
-    }
-  }, [existing?.id])
+      .catch(() => setLoadingPost(false))
+  }, [id, isNew])
 
-  function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+  function setField<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
   function addTag() {
     const t = tagInput.trim()
-    if (t && !form.tags.includes(t)) {
-      set('tags', [...form.tags, t])
-    }
+    if (t && !form.tags.includes(t)) setField('tags', [...form.tags, t])
     setTagInput('')
   }
 
-  function removeTag(tag: string) {
-    set('tags', form.tags.filter((t) => t !== tag))
-  }
-
   async function save(status: Post['status']) {
-    if (!form.title.trim()) { alert('请填写文章标题'); return }
+    if (!form.title.trim()) { setSaveError('请填写文章标题'); return }
+    if (!isLoggedIn) { navigate('/login', { state: { from: location.pathname } }); return }
+
     setSaving(true)
-    await new Promise((r) => setTimeout(r, 300))
+    setSaveError('')
+    try {
+      const data = { ...form, status, slug: form.slug || slugify(form.title) }
 
-    const data = {
-      ...form,
-      status,
-      slug: form.slug || slugify(form.title),
-    }
-
-    if (isNew) {
-      const post = createPost(data)
-      setSaving(false); setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-      navigate(`/editor/${post.id}`, { replace: true })
-    } else if (existing) {
-      updatePost(existing.id, data)
-      setSaving(false); setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      if (isNew) {
+        const post = await createPost(data)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+        navigate(`/editor/${post.id}`, { replace: true })
+        setCurrentId(post.id)
+      } else if (currentId) {
+        await updatePost(currentId, data)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        navigate('/login', { state: { from: location.pathname } })
+      } else {
+        setSaveError((e as Error).message || '保存失败')
+      }
+    } finally {
+      setSaving(false)
     }
   }
+
+  if (loadingPost) return <LoadingSpinner text="加载文章中..." />
 
   const wordCount = form.content.replace(/<[^>]+>/g, '').length
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Editor Header */}
+      {/* Header */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
@@ -98,20 +115,18 @@ export default function Editor() {
           <div className="flex-1 min-w-0">
             <input
               value={form.title}
-              onChange={(e) => set('title', e.target.value)}
+              onChange={(e) => setField('title', e.target.value)}
               placeholder="文章标题..."
               className="w-full text-lg font-semibold text-gray-900 placeholder-gray-400 border-none outline-none bg-transparent"
             />
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs text-gray-400 hidden sm:block">{wordCount} 字</span>
-
-            {saved && (
-              <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">已保存</span>
-            )}
+            {saved && <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">已保存</span>}
+            {saveError && <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full max-w-32 truncate">{saveError}</span>}
 
             <button
-              onClick={() => form.slug && navigate(`/post/${form.slug}`)}
+              onClick={() => form.slug && navigate(`/post/${form.slug || slugify(form.title)}`)}
               disabled={isNew}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30"
               title="预览"
@@ -140,46 +155,33 @@ export default function Editor() {
         </div>
       </div>
 
-      {/* Editor Body */}
+      {/* Body */}
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Main Editor */}
           <div className="flex-1 min-w-0 space-y-4">
-            {/* Excerpt */}
             <div className="bg-white rounded-xl p-4 border border-gray-200">
               <label className="block text-sm font-medium text-gray-700 mb-2">摘要</label>
               <textarea
                 value={form.excerpt}
-                onChange={(e) => set('excerpt', e.target.value)}
-                placeholder="简短描述文章内容（将显示在文章列表中）..."
+                onChange={(e) => setField('excerpt', e.target.value)}
+                placeholder="简短描述文章内容..."
                 rows={3}
                 className="w-full text-sm text-gray-700 placeholder-gray-400 border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
-
-            {/* Rich Editor */}
-            <RichEditor
-              content={form.content}
-              onChange={(html) => set('content', html)}
-              placeholder="开始写你的文章..."
-            />
+            <RichEditor content={form.content} onChange={(html) => setField('content', html)} placeholder="开始写你的文章..." />
           </div>
 
-          {/* Sidebar Settings */}
           <aside className="w-full lg:w-72 shrink-0 space-y-4">
             {/* Status */}
             <div className="bg-white rounded-xl p-4 border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">发布状态</h3>
               <div className="flex gap-2">
                 {(['draft', 'published'] as const).map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => set('status', s)}
+                  <button key={s} onClick={() => setField('status', s)}
                     className={`flex-1 py-2 text-sm rounded-lg border transition-colors ${
                       form.status === s
-                        ? s === 'published'
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-orange-50 text-orange-600 border-orange-300'
+                        ? s === 'published' ? 'bg-blue-600 text-white border-blue-600' : 'bg-orange-50 text-orange-600 border-orange-300'
                         : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
@@ -189,20 +191,20 @@ export default function Editor() {
               </div>
             </div>
 
-            {/* Cover Image */}
+            {/* Cover */}
             <div className="bg-white rounded-xl p-4 border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">封面图片</h3>
               {form.coverImage && (
                 <div className="relative mb-3">
                   <img src={form.coverImage} alt="封面" className="w-full h-32 object-cover rounded-lg" />
-                  <button onClick={() => set('coverImage', '')} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 hover:bg-black/70">
+                  <button onClick={() => setField('coverImage', '')} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 hover:bg-black/70">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
               <input
                 value={form.coverImage}
-                onChange={(e) => set('coverImage', e.target.value)}
+                onChange={(e) => setField('coverImage', e.target.value)}
                 placeholder="输入图片 URL..."
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -211,14 +213,10 @@ export default function Editor() {
             {/* Category */}
             <div className="bg-white rounded-xl p-4 border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">分类</h3>
-              <select
-                value={form.category}
-                onChange={(e) => set('category', e.target.value)}
+              <select value={form.category} onChange={(e) => setField('category', e.target.value)}
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {categories.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
+                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
 
@@ -229,7 +227,9 @@ export default function Editor() {
                 {form.tags.map((tag) => (
                   <span key={tag} className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
                     {tag}
-                    <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
+                    <button onClick={() => setField('tags', form.tags.filter((t) => t !== tag))} className="hover:text-red-500">
+                      <X className="w-3 h-3" />
+                    </button>
                   </span>
                 ))}
               </div>
@@ -252,7 +252,7 @@ export default function Editor() {
               <h3 className="text-sm font-semibold text-gray-900 mb-3">URL Slug</h3>
               <input
                 value={form.slug}
-                onChange={(e) => set('slug', e.target.value)}
+                onChange={(e) => setField('slug', e.target.value)}
                 placeholder={form.title ? slugify(form.title) : 'post-slug'}
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
               />

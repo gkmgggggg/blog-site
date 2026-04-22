@@ -1,34 +1,42 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useBlogStore } from '@/store/blogStore'
+import { postsApi } from '@/api/posts'
+import type { ArchiveYear } from '@/api/posts'
 import { formatDate } from '@/utils'
 import { Clock, Eye } from 'lucide-react'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 export default function Archives() {
-  const posts = useBlogStore((s) => s.posts.filter((p) => p.status === 'published'))
+  const [archives, setArchives] = useState<ArchiveYear[]>([])
+  const [loading, setLoading] = useState(true)
+  const [total, setTotal] = useState(0)
 
-  const grouped = posts.reduce<Record<string, typeof posts>>((acc, post) => {
-    const year = new Date(post.publishedAt || post.createdAt).getFullYear().toString()
-    if (!acc[year]) acc[year] = []
-    acc[year].push(post)
-    return acc
-  }, {})
+  useEffect(() => {
+    postsApi.archives()
+      .then((data) => {
+        setArchives(data)
+        setTotal(data.reduce((sum, y) => sum + y.posts.length, 0))
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
 
-  const years = Object.keys(grouped).sort((a, b) => Number(b) - Number(a))
+  if (loading) return <LoadingSpinner />
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">文章归档</h1>
-      <p className="text-gray-500 mb-10">共 {posts.length} 篇文章</p>
+      <p className="text-gray-500 mb-10">共 {total} 篇文章</p>
 
       <div className="space-y-10">
-        {years.map((year) => (
+        {archives.map(({ year, posts }) => (
           <section key={year}>
             <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-3">
               {year}
-              <span className="text-sm font-normal text-gray-400">{grouped[year].length} 篇</span>
+              <span className="text-sm font-normal text-gray-400">{posts.length} 篇</span>
             </h2>
             <div className="space-y-3">
-              {grouped[year].map((post) => (
+              {posts.map((post) => (
                 <Link
                   key={post.id}
                   to={`/post/${post.slug}`}
