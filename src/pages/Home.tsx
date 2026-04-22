@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { Search, X, TrendingUp } from 'lucide-react'
 import { useBlogStore } from '@/store/blogStore'
@@ -14,14 +14,18 @@ export default function Home() {
     fetchPosts, fetchTags,
   } = useBlogStore()
 
-  // 从 URL 同步初始搜索词
+  // 仅在 mount 时将 URL 参数同步到 store（避免与 fetch effect 级联）
+  const didMount = useRef(false)
   useEffect(() => {
+    if (didMount.current) return
+    didMount.current = true
     const q = searchParams.get('search') || ''
-    if (q !== searchQuery) setSearchQuery(q)
-  }, [searchParams, searchQuery, setSearchQuery])
+    if (q) setSearchQuery(q)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  // 当筛选条件变化时重新拉取
-  const load = useCallback(() => {
+  // 筛选条件变化时重新拉取，fetchPosts 是 Zustand 稳定引用，不会额外触发
+  useEffect(() => {
     fetchPosts({
       status: 'published',
       search: searchQuery || undefined,
@@ -30,8 +34,10 @@ export default function Home() {
     })
   }, [searchQuery, selectedTag, selectedCategory, fetchPosts])
 
-  useEffect(() => { load() }, [load])
-  useEffect(() => { fetchTags() }, [fetchTags])
+  // 标签只需拉取一次
+  useEffect(() => {
+    fetchTags()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const featured = posts[0]
   const restPosts = posts.slice(1)
@@ -58,7 +64,6 @@ export default function Home() {
       )}
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Main Content */}
         <div className="flex-1 min-w-0">
           {hasFilters && (
             <div className="flex items-center gap-2 mb-6 flex-wrap">
@@ -89,7 +94,12 @@ export default function Home() {
           ) : error ? (
             <div className="text-center py-20">
               <p className="text-red-500 mb-3">{error}</p>
-              <button onClick={load} className="text-blue-600 hover:underline text-sm">重试</button>
+              <button
+                onClick={() => fetchPosts({ status: 'published', search: searchQuery || undefined, tag: selectedTag || undefined, category: selectedCategory || undefined })}
+                className="text-blue-600 hover:underline text-sm"
+              >
+                重试
+              </button>
             </div>
           ) : posts.length === 0 ? (
             <div className="text-center py-20 text-gray-400">
@@ -117,7 +127,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Sidebar */}
         <aside className="w-full lg:w-72 shrink-0 space-y-6">
           <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
             <h3 className="font-semibold text-gray-900 mb-3">搜索文章</h3>

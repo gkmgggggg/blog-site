@@ -12,7 +12,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchAllPosts()
     fetchStats()
-  }, [fetchAllPosts, fetchStats])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = posts.filter((p) => tab === 'all' || p.status === tab)
   const publishedCount = stats?.publishedCount ?? posts.filter((p) => p.status === 'published').length

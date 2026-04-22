@@ -7,7 +7,7 @@ import { defaultAuthor } from '@/data/mockData'
 export default function About() {
   const { stats, fetchStats } = useBlogStore()
 
-  useEffect(() => { fetchStats() }, [fetchStats])
+  useEffect(() => { fetchStats() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-16">
